@@ -8,7 +8,8 @@ import { downloadYoutubeAudioMp3 } from "@/lib/server/ytdlp-mp3";
 /** Needs Node — spawns yt-dlp / ffmpeg (not supported on Edge / typical Vercel hobby limits). */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 600;
+/** Vercel Hobby allows max 300s; higher tiers may support more via dashboard. */
+export const maxDuration = 300;
 
 export function GET() {
   return NextResponse.json(
