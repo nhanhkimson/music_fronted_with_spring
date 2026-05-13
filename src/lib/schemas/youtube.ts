@@ -1,14 +1,22 @@
 import { z } from "zod";
 
-/** Mirrors the backend Java regex for a consistent UX */
-const youtubeUrlRegex =
-  /^https?:\/\/(www\.|m\.)?(youtube\.com\/(watch\?.*v=|shorts\/|embed\/)|youtu\.be\/)[\w-]{11}([?&#].*)?$/i;
+import { YOUTUBE_URL_REGEX } from "@/lib/youtube-url";
 
 export const downloadFormSchema = z.object({
   url: z
     .string()
     .min(1, "URL is required")
-    .regex(youtubeUrlRegex, "Enter a valid YouTube URL"),
+    .regex(YOUTUBE_URL_REGEX, "Enter a valid YouTube URL"),
 });
 
 export type DownloadFormValues = z.infer<typeof downloadFormSchema>;
+
+/** JSON body for POST /api/download — same shape as the Spring API */
+export const downloadRequestSchema = z.object({
+  url: z
+    .string()
+    .min(1, "url is required")
+    .regex(YOUTUBE_URL_REGEX, "invalid YouTube URL"),
+});
+
+export type DownloadRequestBody = z.infer<typeof downloadRequestSchema>;

@@ -2,15 +2,24 @@ import axios from "axios";
 
 import type { ErrorResponseBody } from "@/types/api";
 
+/** Same-origin Next API, or external Spring URL from NEXT_PUBLIC_API_URL */
+function downloadEndpoint(): string {
+  const base = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (!base) {
+    return "/api/download";
+  }
+  return `${base.replace(/\/$/, "")}/api/download`;
+}
+
 const client = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080",
   timeout: 600_000,
   headers: { "Content-Type": "application/json" },
 });
 
 export async function requestYoutubeMp3Download(url: string): Promise<void> {
+  const endpoint = downloadEndpoint();
   const response = await client.post<ArrayBuffer>(
-    "/api/download",
+    endpoint,
     { url },
     {
       responseType: "arraybuffer",
