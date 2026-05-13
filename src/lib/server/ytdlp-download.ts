@@ -1,22 +1,24 @@
 import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-
-const execFileAsync = promisify(execFile);
 import { randomBytes } from "node:crypto";
-import { createReadStream } from "node:fs";
+import { createReadStream, existsSync } from "node:fs";
 import { mkdir, stat, unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 
 function isErrno(e: unknown, code: string): boolean {
   return typeof e === "object" && e !== null && "code" in e && (e as NodeJS.ErrnoException).code === code;
 }
 
-/** Same search order as the Spring service; `YTDLP_PATH` overrides. */
+/** Vercel: `prebuild` drops `bin/yt-dlp` (Linux). Local: Homebrew / PATH. `YTDLP_PATH` overrides all. */
 export function ytdlpCandidates(): string[] {
   const fromEnv = process.env.YTDLP_PATH?.trim();
+  const bundled = path.join(process.cwd(), "bin", "yt-dlp");
   const list = [
     fromEnv,
+    existsSync(bundled) ? bundled : null,
     "/opt/homebrew/bin/yt-dlp",
     "/usr/local/bin/yt-dlp",
     "yt-dlp",
@@ -26,7 +28,7 @@ export function ytdlpCandidates(): string[] {
 
 /**
  * Download best audio with yt-dlp to a temp file, return bytes (same cap as before).
- * On Vercel, yt-dlp is usually absent — use `NEXT_PUBLIC_API_URL` to a backend with yt-dlp, or a custom image that includes the binary.
+ * On Vercel, `prebuild` should have fetched `bin/yt-dlp`. Optional: `NEXT_PUBLIC_API_URL` delegates to another API.
  */
 export async function ytdlpAudioToBuffer(
   videoUrl: string,
@@ -86,7 +88,7 @@ export async function ytdlpAudioToBuffer(
   }
 
   const hint = lastENOENT
-    ? " Install yt-dlp (e.g. brew install yt-dlp), set YTDLP_PATH to the binary, or set NEXT_PUBLIC_API_URL to a backend that runs yt-dlp."
+    ? " Install yt-dlp (e.g. brew install yt-dlp), set YTDLP_PATH, or on Vercel ensure `prebuild` ran (bundles bin/yt-dlp); optionally set NEXT_PUBLIC_API_URL to an external API."
     : "";
   throw new Error(`Could not run yt-dlp.${hint}`);
 }

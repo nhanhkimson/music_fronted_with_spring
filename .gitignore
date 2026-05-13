@@ -4,6 +4,8 @@ node_modules/
 .next/
 out/
 .env.local
+.env.vercel
+bin/yt-dlp
 
 # OS / editor
 .DS_Store
