@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "YouTube to MP3",
+  title: "YouTube audio download",
   description: "Download audio from a YouTube link",
 };
 

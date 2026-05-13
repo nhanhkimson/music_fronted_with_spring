@@ -39,9 +39,9 @@ export default function HomePage() {
     <main className="flex min-h-dvh items-center justify-center bg-[radial-gradient(ellipse_at_top,_hsl(250_40%_12%)_0%,_transparent_55%)] px-4 py-16">
       <Card className="w-full max-w-md rounded-xl border-border/80 bg-card/90 shadow-2xl shadow-black/40 backdrop-blur-sm">
         <CardHeader className="space-y-2 pb-2 text-center">
-          <CardTitle className="text-2xl font-semibold tracking-tight">YouTube to MP3</CardTitle>
+          <CardTitle className="text-2xl font-semibold tracking-tight">YouTube audio</CardTitle>
           <CardDescription className="text-muted-foreground">
-            Paste a video link and save the audio to your device.
+            Paste a video link and download the audio stream (WebM/Opus from YouTube — not re-encoded MP3).
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -92,7 +92,7 @@ export default function HomePage() {
               ) : (
                 <>
                   <Download className="mr-2 h-5 w-5" aria-hidden />
-                  Download MP3
+                  Download audio
                 </>
               )}
             </Button>

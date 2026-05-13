@@ -1,15 +1,26 @@
-import { promises as fs } from "node:fs";
+import { Readable } from "node:stream";
 import { NextRequest, NextResponse } from "next/server";
+import play from "play-dl";
 
 import { downloadRequestSchema } from "@/lib/schemas/youtube";
-import { resolveYtDlpExecutable } from "@/lib/server/resolve-ytdlp";
-import { downloadYoutubeAudioMp3 } from "@/lib/server/ytdlp-mp3";
 
-/** Needs Node — spawns yt-dlp / ffmpeg (not supported on Edge / typical Vercel hobby limits). */
+/** Pure Node; uses play-dl (no yt-dlp/ffmpeg). Works on Vercel within plan limits. */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-/** Vercel Hobby allows max 300s; higher tiers may support more via dashboard. */
 export const maxDuration = 300;
+
+function mediaForPlayDlType(streamType: string): { mime: string; ext: string } {
+  if (streamType === "webm/opus" || streamType === "opus") {
+    return { mime: "audio/webm", ext: "webm" };
+  }
+  if (streamType === "ogg/opus") {
+    return { mime: "audio/ogg", ext: "ogg" };
+  }
+  if (streamType === "raw" || streamType === "arbitrary") {
+    return { mime: "application/octet-stream", ext: "audio" };
+  }
+  return { mime: "audio/webm", ext: "webm" };
+}
 
 export function GET() {
   return NextResponse.json(
@@ -19,19 +30,6 @@ export function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  // Vercel serverless has no yt-dlp/ffmpeg and tight timeouts — use an external API URL instead.
-  if (process.env.VERCEL) {
-    return NextResponse.json(
-      {
-        error: "not_available",
-        message:
-          "This route cannot run on Vercel (no yt-dlp/ffmpeg). Set NEXT_PUBLIC_API_URL in Vercel to your deployed API (e.g. Fly.io Spring backend) and redeploy.",
-      },
-      { status: 503 }
-    );
-  }
-
-  let workDir: string | null = null;
   try {
     let json: unknown;
     try {
@@ -53,37 +51,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let ytDlp: string;
-    try {
-      ytDlp = resolveYtDlpExecutable();
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "yt-dlp not found";
+    const videoUrl = parsed.data.url.trim();
+    const kind = await play.validate(videoUrl);
+    if (kind !== "yt_video") {
       return NextResponse.json(
-        { error: "download_failed", message: msg },
-        { status: 502 }
+        {
+          error: "validation_error",
+          message: "URL must be a single YouTube video (not a playlist or other source)",
+        },
+        { status: 400 }
       );
     }
 
-    const { buffer, workDir: wd } = await downloadYoutubeAudioMp3(
-      parsed.data.url,
-      ytDlp
-    );
-    workDir = wd;
+    const ytStream = await play.stream(videoUrl, {
+      discordPlayerCompatibility: false,
+    });
 
-    await fs.rm(workDir, { recursive: true, force: true }).catch(() => {});
-    workDir = null;
+    const nodeReadable = ytStream.stream as Readable;
+    const { mime, ext } = mediaForPlayDlType(String(ytStream.type));
+    const body = Readable.toWeb(nodeReadable) as unknown as ReadableStream<Uint8Array>;
 
-    return new NextResponse(new Uint8Array(buffer), {
+    return new NextResponse(body, {
       status: 200,
       headers: {
-        "Content-Type": "audio/mpeg",
-        "Content-Disposition": 'attachment; filename="audio.mp3"',
+        "Content-Type": mime,
+        "Content-Disposition": `attachment; filename="audio.${ext}"`,
+        "Cache-Control": "no-store",
       },
     });
   } catch (e) {
-    if (workDir) {
-      await fs.rm(workDir, { recursive: true, force: true }).catch(() => {});
-    }
     const msg = e instanceof Error ? e.message : "something went wrong";
     return NextResponse.json(
       { error: "download_failed", message: msg },
