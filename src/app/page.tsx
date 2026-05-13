@@ -41,7 +41,7 @@ export default function HomePage() {
         <CardHeader className="space-y-2 pb-2 text-center">
           <CardTitle className="text-2xl font-semibold tracking-tight">YouTube audio</CardTitle>
           <CardDescription className="text-muted-foreground">
-            Paste a video link and download the audio stream (WebM/Opus from YouTube — not re-encoded MP3).
+            Paste a video link and download the best audio stream (often WebM or M4A via yt-dlp — not guaranteed MP3).
           </CardDescription>
         </CardHeader>
         <CardContent>

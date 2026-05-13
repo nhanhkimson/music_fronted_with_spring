@@ -1,12 +1,15 @@
 import { z } from "zod";
 
-import { YOUTUBE_URL_REGEX } from "@/lib/youtube-url";
+import { CANONICAL_YOUTUBE_WATCH_REGEX, normalizeYoutubeUrl } from "@/lib/youtube-url";
 
 export const downloadFormSchema = z.object({
   url: z
     .string()
     .min(1, "URL is required")
-    .regex(YOUTUBE_URL_REGEX, "Enter a valid YouTube URL"),
+    .transform((s) => normalizeYoutubeUrl(s))
+    .refine((s) => CANONICAL_YOUTUBE_WATCH_REGEX.test(s), {
+      message: "Enter a valid YouTube URL",
+    }),
 });
 
 export type DownloadFormValues = z.infer<typeof downloadFormSchema>;
@@ -16,7 +19,10 @@ export const downloadRequestSchema = z.object({
   url: z
     .string()
     .min(1, "url is required")
-    .regex(YOUTUBE_URL_REGEX, "invalid YouTube URL"),
+    .transform((s) => normalizeYoutubeUrl(s))
+    .refine((s) => CANONICAL_YOUTUBE_WATCH_REGEX.test(s), {
+      message: "invalid YouTube URL",
+    }),
 });
 
 export type DownloadRequestBody = z.infer<typeof downloadRequestSchema>;
