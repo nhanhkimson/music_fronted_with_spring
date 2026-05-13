@@ -18,6 +18,18 @@ export function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  // Vercel serverless has no yt-dlp/ffmpeg and tight timeouts — use an external API URL instead.
+  if (process.env.VERCEL) {
+    return NextResponse.json(
+      {
+        error: "not_available",
+        message:
+          "This route cannot run on Vercel (no yt-dlp/ffmpeg). Set NEXT_PUBLIC_API_URL in Vercel to your deployed API (e.g. Fly.io Spring backend) and redeploy.",
+      },
+      { status: 503 }
+    );
+  }
+
   let workDir: string | null = null;
   try {
     let json: unknown;
